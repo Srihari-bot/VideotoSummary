@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semantic Search with Transformer.js</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/transformers@1.4.0"></script> <!-- Load Transformer.js -->
+</head>
+<body>
+
+    <h1>Sample Document for Semantic Search</h1>
+    <p id="text1">Transformer models have revolutionized natural language processing by enabling a wide range of tasks such as text classification, translation, and semantic search.</p>
+    <p id="text2">Semantic search leverages machine learning models to understand the context and meaning behind the words in a query rather than relying on simple keyword matching.</p>
+    <p id="text3">A transformer model processes input text as a sequence of tokens, learning dependencies between the tokens to generate high-quality embeddings.</p>
+    <p id="text4">Applications of semantic search include knowledge discovery, chatbots, and recommendation systems.</p>
+
+    <h2>Search Query</h2>
+    <input type="text" id="query" placeholder="Enter search query..." />
+    <button onclick="performSearch()">Search</button>
+
+    <div id="results"></div>
+
+    <script>
+        async function loadModel() {
+            // Load a pre-trained transformer model
+            const model = await transformers.load('bert-base-uncased');
+            return model;
+        }
+
+        async function encodeText(model, text) {
+            const encoded = await model.encode(text);
+            return encoded;
+        }
+
+        function cosineSimilarity(a, b) {
+            const dotProduct = a.dot(b);
+            const normA = a.norm();
+            const normB = b.norm();
+            return dotProduct.div(normA.mul(normB));
+        }
+
+        async function performSearch() {
+            const query = document.getElementById('query').value;
+            const model = await loadModel(); // Load model
+
+            // Extract text from paragraphs
+            const text1 = document.getElementById('text1').textContent;
+            const text2 = document.getElementById('text2').textContent;
+            const text3 = document.getElementById('text3').textContent;
+            const text4 = document.getElementById('text4').textContent;
+
+            // Encode query and documents
+            const queryEmbedding = await encodeText(model, query);
+            const text1Embedding = await encodeText(model, text1);
+            const text2Embedding = await encodeText(model, text2);
+            const text3Embedding = await encodeText(model, text3);
+            const text4Embedding = await encodeText(model, text4);
+
+            // Calculate similarity between query and document embeddings
+            const similarities = [
+                { text: text1, similarity: cosineSimilarity(queryEmbedding, text1Embedding) },
+                { text: text2, similarity: cosineSimilarity(queryEmbedding, text2Embedding) },
+                { text: text3, similarity: cosineSimilarity(queryEmbedding, text3Embedding) },
+                { text: text4, similarity: cosineSimilarity(queryEmbedding, text4Embedding) },
+            ];
+
+            // Sort by similarity score in descending order
+            similarities.sort((a, b) => b.similarity - a.similarity);
+
+            // Display the results
+            let resultHtml = '<h3>Search Results:</h3>';
+            similarities.forEach(result => {
+                resultHtml += `<p>${result.text} - Similarity: ${result.similarity.toFixed(4)}</p>`;
+            });
+            document.getElementById('results').innerHTML = resultHtml;
+        }
+    </script>
+
+</body>
+</html>
